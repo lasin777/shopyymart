@@ -1,0 +1,13 @@
+'use client';
+import {useEffect,useRef,type ReactNode} from 'react';
+import {X,Package,ArrowUpRight} from 'lucide-react';
+export function Brand({name='ShopNest',compact=false}:{name?:string;compact?:boolean}){return <a href="/" className={'brand '+(compact?'compact':'')} aria-label={name+' home'}><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="m5 10 11-6 11 6v13l-11 6-11-6V10Z"/><path d="m5 10 11 6 11-6M16 16v13"/></svg><span>{name}<b>®</b></span></a>;}
+export function Dialog({open,onClose,title,children,className=''}:{open:boolean;onClose:()=>void;title:string;children:ReactNode;className?:string}){
+ const ref=useRef<HTMLDialogElement>(null);
+ useEffect(()=>{const el=ref.current;if(!el)return;if(open){if(!el.open)el.showModal();const previous=document.body.style.overflow;document.body.style.overflow='hidden';return()=>{document.body.style.overflow=previous;if(el.open)el.close();};}else if(el.open)el.close();},[open]);
+ return <dialog ref={ref} className={'dialog '+className} aria-label={title} onCancel={e=>{e.preventDefault();onClose();}} onClick={e=>{if(e.target===e.currentTarget){const r=e.currentTarget.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)onClose();}}}><button className="icon-button dialog-close" aria-label="Close dialog" onClick={onClose}><X size={20}/></button>{children}</dialog>;
+}
+export function ProductImage({src,name,className=''}:{src?:string|null;name:string;className?:string}){return <div className={'product-image '+className}>{src?<img src={src} alt={name} loading="lazy" onLoad={e=>{e.currentTarget.style.display='block';}} onError={e=>{e.currentTarget.style.display='none';}}/>:null}<Package className="image-fallback" size={42} strokeWidth={.8} aria-hidden="true"/></div>;}
+export function ErrorMessage({message}:{message?:string}){return message?<p className="error-message" role="alert">{message}</p>:null;}
+export function OutLink({href,children}:{href:string;children:ReactNode}){return <a href={href} target="_blank" rel="noopener noreferrer" className="text-link">{children}<ArrowUpRight size={16}/></a>;}
+export async function api<T=Record<string,unknown>>(url:string,options:RequestInit={}):Promise<T>{const response=await fetch(url,{...options,headers:{...(options.body&&!(options.body instanceof FormData)?{'Content-Type':'application/json'}:{}),...options.headers}});let data;try{data=await response.json();}catch{throw new Error('The store could not be reached. Please try again.');}if(!response.ok){const message=data && typeof data==='object' && 'error' in data && typeof data.error==='string'?data.error:'Something went wrong. Please try again.';throw new Error(message);}return data as T;}

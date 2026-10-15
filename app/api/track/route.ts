@@ -1,0 +1,3 @@
+import {trackingSchema} from '@/lib/domain';
+import {handle,json,sameOrigin,readBody,rateLimit,db,HttpError,orderFrom,publicOrder} from '@/lib/server';
+export async function POST(request:Request){return handle(async()=>{sameOrigin(request);await rateLimit(request,'track',30,900);const {id,phone}=trackingSchema.parse(await readBody(request));const row=await db().prepare('SELECT * FROM orders WHERE id=? AND phone=?').bind(id,phone).first<Record<string,unknown>>();if(!row)throw new HttpError(404,'No matching order. Check the reference and mobile number.');return json({order:publicOrder(orderFrom(row))});});}
