@@ -1,0 +1,5 @@
+import {settingsSchema} from '@/lib/domain';
+import {z} from 'zod';
+import {handle,json,requireAdmin,readBody,db,getSettings,HttpError} from '@/lib/server';
+export async function GET(request:Request){return handle(async()=>{await requireAdmin(request);return json(await getSettings());});}
+export async function POST(request:Request){return handle(async()=>{await requireAdmin(request);const {settings,version}=z.object({settings:settingsSchema,version:z.number().int().nonnegative()}).parse(await readBody(request));if(version===0){try{await db().prepare('INSERT INTO settings(id,data,version) VALUES(?,?,1)').bind('store',JSON.stringify(settings)).run();}catch{throw new HttpError(409,'Settings changed. Reload and try again.');}}else{const r=await db().prepare('UPDATE settings SET data=?,version=version+1 WHERE id=? AND version=?').bind(JSON.stringify(settings),'store',version).run();if(r.meta.changes!==1)throw new HttpError(409,'Settings changed. Reload and try again.');}return json(await getSettings());});}
